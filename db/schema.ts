@@ -1,3 +1,5 @@
 import {sqliteTable,text,integer,index} from 'drizzle-orm/sqlite-core';
 export const tasks=sqliteTable('tasks',{id:text('id').primaryKey(),payload:text('payload').notNull(),version:integer('version').notNull().default(1),updatedAt:text('updated_at').notNull()});
 export const events=sqliteTable('events',{id:integer('id').primaryKey({autoIncrement:true}),taskId:text('task_id').notNull().references(()=>tasks.id),actor:text('actor').notNull(),message:text('message').notNull(),createdAt:text('created_at').notNull()},t=>[index('idx_events_task').on(t.taskId)]);
+export const appUsers=sqliteTable('app_users',{email:text('email').primaryKey(),name:text('name').notNull(),userId:text('user_id').unique(),permission:text('permission').notNull(),active:integer('active').notNull().default(1),version:integer('version').notNull().default(1),lastSeen:text('last_seen')});
+export const userEvents=sqliteTable('user_events',{id:integer('id').primaryKey({autoIncrement:true}),email:text('email').notNull(),actor:text('actor').notNull(),message:text('message').notNull(),createdAt:text('created_at').notNull()});

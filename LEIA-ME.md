@@ -10,7 +10,11 @@ Sistema baseado nas 55 atividades da planilha organizada. A classificação resp
 - Histórico de alterações com data, autor e campos alterados.
 - Exportação CSV dos resultados filtrados, compatível com Excel.
 - Persistência no banco D1 e controle de versão para impedir sobrescrita de edições simultâneas.
-- Acesso autenticado. A publicação prevista é privada, com acesso somente do proprietário; compartilhamento com a equipe exige configuração posterior.
+- Acesso autenticado com cadastro autorizado, vinculado ao ID estável do usuário no primeiro acesso.
+- Administrador → Usuários: cadastro, alteração de permissões, inativação e histórico.
+- Perfis: somente leitura; leitura e edição de atividades existentes; leitura, edição e gravação de novas atividades. O proprietário é o administrador principal e permanece ativo. Paulo recebe acesso completo às atividades.
+- Todas as APIs verificam o perfil no servidor; usuários não cadastrados ou inativos recebem 403. Alterações de perfil valem na próxima chamada ao servidor.
+- Cadastrar um usuário no sistema não envia convite nem altera a lista de compartilhamento do Sites. Para entrar, novos usuários também precisam receber acesso ao site no Sites.
 
 ## Prévia local
 
@@ -33,5 +37,9 @@ O sistema carrega registros do servidor. Uma falha de leitura mostra erro e bloq
 - API anônima retorna 401; tipo inválido retorna 400; versão de edição obsoleta retorna 409.
 - Busca por CON-98 retorna a atividade correspondente.
 - Conferência visual do resumo e compilação da aplicação.
+- Matriz de leitura/edição/criação verificada na API local, com isolamento das rotas de administração.
+- Usuário desconhecido, identidade divergente e usuário inativo recebem 403; rebaixamento impede novos cadastros; versão obsoleta de permissão recebe 409.
+- Administrador principal não pode ser inativado ou rebaixado; o endpoint não concede perfil administrador.
+- Histórico de permissões e renderização do menu administrativo verificados localmente.
 
-A publicação externa permanece pendente de autorização após rejeição pela revisão automática de aprovação. O endereço reservado não comprova que exista uma versão publicada.
+Site publicado: https://connect-gestao-atividades.rdc-viagens-1645.chatgpt.site/. O compartilhamento permanece restrito aos e-mails autorizados no Sites.

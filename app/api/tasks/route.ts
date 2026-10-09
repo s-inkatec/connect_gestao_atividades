@@ -1,13 +1,15 @@
 import {getChatGPTUser} from '@/app/chatgpt-auth';
 import {database,listTasks,initialize} from '@/db/store';
 import {validateTask} from '@/lib/model';
+import {accessFor} from '@/db/access';
 export const dynamic='force-dynamic';
 const reply=(x:any,status=200)=>Response.json(x,{status,headers:{'Cache-Control':'no-store'}});
-export async function GET(request:Request){try{if(!await getChatGPTUser())return reply({error:'Entre na sua conta para acessar as atividades.'},401);const id=new URL(request.url).searchParams.get('history');if(id){const {results}=await database().prepare('SELECT actor,message,created_at FROM events WHERE task_id=? ORDER BY id DESC LIMIT 30').bind(id).all();return reply(results);}return reply(await listTasks());}catch(e){console.error(e);return reply({error:'Não é possível carregar as atividades. Tente novamente.'},503);}}
+export async function GET(request:Request){try{const user=await getChatGPTUser();if(!user)return reply({error:'Entre na sua conta para acessar as atividades.'},401);if(!await accessFor(user))return reply({error:'Seu usuário não tem acesso às atividades.'},403);const id=new URL(request.url).searchParams.get('history');if(id){const {results}=await database().prepare('SELECT actor,message,created_at FROM events WHERE task_id=? ORDER BY id DESC LIMIT 30').bind(id).all();return reply(results);}return reply(await listTasks());}catch(e){console.error(e);return reply({error:'Não é possível carregar as atividades. Tente novamente.'},503);}}
 export async function POST(request:Request){try{
  const user=await getChatGPTUser();if(!user)return reply({error:'Sessão encerrada. Entre novamente.'},401);
+ const access=await accessFor(user);if(!access)return reply({error:'Seu usuário não tem acesso às atividades.'},403);
  const origin=request.headers.get('origin');if(!origin||origin!==new URL(request.url).origin)return reply({error:'Origem inválida.'},403);
- const raw:any=await request.json();let value;try{value=validateTask(raw);}catch(e){return reply({error:(e as Error).message},400);}
+ const raw:any=await request.json();if(!raw||typeof raw!=='object')return reply({error:'Dados inválidos.'},400);if(raw.id?!access.canEdit:!access.canCreate)return reply({error:raw.id?'Sua permissão permite apenas consultar atividades.':'Sua permissão não permite criar atividades.'},403);let value;try{value=validateTask(raw);}catch(e){return reply({error:(e as Error).message},400);}
  await initialize();const db=database();const now=new Date().toISOString();
  if(raw.id){
  if(typeof raw.id!=='string'||!Number.isInteger(raw.version)||raw.version<1)return reply({error:'Versão inválida.'},400);
