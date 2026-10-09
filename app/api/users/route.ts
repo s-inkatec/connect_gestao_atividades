@@ -1,6 +1,7 @@
 import {getChatGPTUser} from '@/app/chatgpt-auth';
 import {accessFor,OWNER_EMAIL} from '@/db/access';
 import {database} from '@/db/store';
+import {backend,fsUsers,fsSaveUser} from '@/db/firestore-store';
 export const dynamic='force-dynamic';
 const reply=(x:unknown,status=200)=>Response.json(x,{status,headers:{'Cache-Control':'no-store'}});
 export async function GET(request:Request){try{
@@ -8,6 +9,7 @@ export async function GET(request:Request){try{
  const access=await accessFor(user);if(!access)return reply({error:'Acesso não autorizado.'},403);
  if(new URL(request.url).searchParams.has('me'))return reply(access);
  if(!access.isAdmin)return reply({error:'Somente o administrador gerencia usuários.'},403);
+ if(backend()==='firestore')return reply(await fsUsers());
  const {results:users}=await database().prepare('SELECT email,name,permission,active,version,last_seen AS lastSeen FROM app_users ORDER BY name,email').all();
  const {results:history}=await database().prepare('SELECT email,actor,message,created_at FROM user_events ORDER BY id DESC LIMIT 30').all();
  return reply({users,history});
@@ -21,6 +23,7 @@ export async function POST(request:Request){try{
  const name=typeof raw.name==='string'?raw.name.trim():'';
  if(email.length>254||! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!name||name.length>150||!['read','edit','create'].includes(raw.permission)||typeof raw.active!=='boolean')return reply({error:'Informe nome, e-mail e uma permissão válida.'},400);
  if(email===OWNER_EMAIL)return reply({error:'O administrador principal permanece ativo e com acesso completo.'},400);
+ if(backend()==='firestore'){const {status,...result}=await fsSaveUser(raw,email,name,user);return reply(result,status||200);}
  const db=database();const old=await db.prepare('SELECT name,permission,active,version FROM app_users WHERE email=?').bind(email).first<{name:string;permission:string;active:number;version:number}>();
  const now=new Date().toISOString();let result;
  if(old){

@@ -1,0 +1,7 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only the server service account accesses data, with app role checks.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

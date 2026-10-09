@@ -1,4 +1,5 @@
 import {database} from './store';
+import {available,backend,fsAccess} from './firestore-store';
 import type {ChatGPTUser} from '@/app/chatgpt-auth';
 import {capabilities,type Access,type Permission} from '@/lib/permissions';
 export const OWNER_EMAIL='silvio.goncalves@rdcviagens.com.br';
@@ -10,6 +11,7 @@ export async function initializeUsers(){
  ]);
 }
 export async function accessFor(user:ChatGPTUser):Promise<Access|null>{
+ available();if(backend()==='firestore')return fsAccess(user);
  await initializeUsers();const db=database();const email=user.email.trim().toLowerCase();
  // The dispatcher supplies identity; bind invited email to its stable Site user ID once.
  await db.prepare('UPDATE app_users SET user_id=?,last_seen=? WHERE email=? AND active=1 AND (user_id IS NULL OR user_id=?)').bind(user.userId,new Date().toISOString(),email,user.userId).run();
